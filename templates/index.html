@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TikTok Live Finder</title>
+<style>
+:root{
+ --bg:#0b0b0f; --bg2:#101018; --card:#16161f; --card2:#1c1c27;
+ --line:#262633; --line2:#33333f; --txt:#eef0f6; --muted:#9a9aab;
+ --accent:#fe2c55; --accent2:#ff5c78; --cyan:#25f4ee; --ok:#38d39f;
+ --warn:#f7b955; --radius:16px;
+ --shadow:0 6px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+ background:radial-gradient(1200px 600px at 80% -10%,rgba(254,44,85,.10),transparent 60%),
+            radial-gradient(1000px 500px at -10% 0%,rgba(37,244,238,.07),transparent 55%),
+            var(--bg);
+ color:var(--txt);-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#2c2c38;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+header{display:flex;align-items:center;gap:12px;padding:13px 18px;
+ border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+ background:rgba(11,11,15,.82);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px;letter-spacing:.2px}
+.logo .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);
+ box-shadow:0 0 12px var(--accent);animation:beat 1.6s infinite}
+@keyframes beat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
+.logo b{background:linear-gradient(92deg,#fff, #ffd0d9 60%, var(--cyan));
+ -webkit-background-clip:text;background-clip:text;color:transparent}
+.grow{flex:1}
+.self{display:flex;align-items:center;gap:8px;background:var(--card);
+ border:1px solid var(--line);border-radius:999px;padding:4px 13px 4px 5px;
+ font-size:13px;white-space:nowrap;max-width:52vw;overflow:hidden}
+.self img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:#333}
+.self .st{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none;
+ box-shadow:0 0 8px var(--ok)}
+.self .st.bad{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.iconbtn{background:var(--card);color:var(--txt);border:1px solid var(--line);
+ border-radius:10px;padding:8px 13px;font-size:14px;cursor:pointer;transition:.15s}
+.iconbtn:hover{border-color:var(--line2);background:var(--card2)}
+
+main{padding:18px;max-width:1180px;margin:0 auto}
+.addbar{display:flex;gap:10px;margin-bottom:20px}
+.addbar .field{flex:1;position:relative;min-width:0}
+.addbar input{width:100%;padding:13px 14px;font-size:15px;border-radius:12px;
+ border:1px solid var(--line);background:var(--card);color:var(--txt);transition:.15s}
+.addbar input:focus{outline:none;border-color:var(--accent);
+ box-shadow:0 0 0 3px rgba(254,44,85,.15)}
+.btn{border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:14px;
+ font-weight:600;cursor:pointer;background:var(--card2);color:var(--txt);transition:.15s;
+ display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover:not(:disabled){transform:translateY(-1px);border-color:var(--line2)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:linear-gradient(92deg,var(--accent),var(--accent2));
+ border-color:transparent;box-shadow:0 4px 14px rgba(254,44,85,.3)}
+.btn.ghost{background:transparent}
+.btn.ok{background:linear-gradient(92deg,#14855a,#1aa06c);border-color:transparent}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:10px}
+
+.sec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;
+ margin:22px 2px 12px;font-weight:700;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:1px;background:var(--line)}
+
+.acct{background:linear-gradient(180deg,var(--card),var(--bg2));
+ border:1px solid var(--line);border-radius:var(--radius);padding:18px;
+ margin-bottom:16px;box-shadow:var(--shadow);animation:rise .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.top{display:flex;gap:15px;align-items:flex-start;flex-wrap:wrap}
+.avatar{width:78px;height:78px;border-radius:50%;object-fit:cover;flex:none;
+ background:#2a2a35;border:2px solid var(--line2)}
+.avatar.ph{display:flex;align-items:center;justify-content:center;font-size:30px}
+.pi{flex:1;min-width:230px}
+.name{font-size:19px;font-weight:800;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.verified{color:var(--cyan);font-size:15px}
+.chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;
+ background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+.chip.live{background:linear-gradient(92deg,var(--accent),var(--accent2));
+ color:#fff;border-color:transparent;box-shadow:0 0 10px rgba(254,44,85,.4)}
+.chip.priv{color:var(--warn)}
+.handle{color:var(--muted);font-size:13.5px;margin-top:2px}
+.handle a{text-decoration:none}.handle a:hover{color:var(--cyan)}
+.bio{font-size:13.5px;margin:8px 0;white-space:pre-wrap;word-break:break-word;color:#cfd0da}
+.bio a{color:var(--cyan)}
+.stats{display:flex;gap:22px;margin-top:8px;flex-wrap:wrap}
+.stat b{font-size:17px;font-weight:800}
+.stat span{color:var(--muted);font-size:12.5px;margin-left:4px}
+.activity{font-size:12.5px;color:var(--muted);margin-top:9px;display:flex;
+ align-items:center;gap:6px;flex-wrap:wrap}
+.live-dot{color:var(--ok)}.idle-dot{color:var(--muted)}
+
+.acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.statusmsg{font-size:12.5px;color:var(--warn);flex-basis:100%;margin-top:2px}
+.statusmsg:empty{display:none}
+
+.adv{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;display:none}
+.adv.open{display:block}
+.adv label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+.adv .row{display:flex;gap:8px;flex-wrap:wrap}
+.adv input{flex:1;min-width:200px;padding:9px 11px;border-radius:9px;font-size:12.5px;
+ background:var(--bg2);border:1px solid var(--line);color:var(--txt);font-family:monospace}
+.adv input:focus{outline:none;border-color:var(--cyan)}
+.adv .help{font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.5}
+.adv .help b{color:#cfd0da}
+
+.progress{margin-top:14px}
+.progress .lab{display:flex;justify-content:space-between;font-size:12.5px;
+ color:var(--muted);margin-bottom:6px;gap:8px;flex-wrap:wrap}
+.progress .lab b{color:var(--txt)}
+.bar{height:10px;background:#22222c;border-radius:8px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:8px;
+ background:linear-gradient(92deg,var(--accent),var(--accent2));transition:width .5s ease}
+.bar.indet i{width:34%!important;animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{margin-left:-34%}100%{margin-left:100%}}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));
+ gap:12px;margin-top:16px}
+.lc{background:var(--card2);border:1px solid var(--line);border-radius:14px;
+ overflow:hidden;position:relative;animation:rise .3s ease;transition:.15s}
+.lc:hover{border-color:var(--accent);transform:translateY(-2px)}
+.lc .thumb{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#20202a;cursor:pointer}
+.lc .ph{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;
+ font-size:32px;background:linear-gradient(135deg,#20202a,#2a2a38);cursor:pointer}
+.lc .badge{position:absolute;top:8px;left:8px;display:flex;gap:6px;align-items:center}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--accent);
+ box-shadow:0 0 0 rgba(254,44,85,.6);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(254,44,85,.6)}70%{box-shadow:0 0 0 10px rgba(254,44,85,0)}100%{box-shadow:0 0 0 0 rgba(254,44,85,0)}}
+.vw{background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px}
+.lc .m{padding:9px 10px}
+.lc .u{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc .t{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;min-height:14px;margin-top:1px}
+.lc .w{display:block;text-align:center;background:linear-gradient(92deg,var(--accent),var(--accent2));
+ color:#fff;text-decoration:none;font-size:12.5px;font-weight:700;padding:7px;border-radius:8px;margin-top:8px}
+.muted{color:var(--muted);font-size:13.5px;margin-top:10px}
+
+.logwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;
+ max-height:210px;overflow:auto;font-size:12.5px}
+.logrow{padding:7px 13px;border-bottom:1px solid var(--line);color:var(--muted);
+ display:flex;gap:9px;font-family:monospace}
+.logrow:last-child{border-bottom:0}.logrow .tm{color:#6b6b7a;flex:none}
+
+dialog{background:var(--card);color:var(--txt);border:1px solid var(--line);
+ border-radius:16px;max-width:560px;width:92vw;padding:0;box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(0,0,0,.66);backdrop-filter:blur(3px)}
+.db{padding:20px}
+.db h3{margin:0 0 6px}
+textarea,.db input{width:100%;background:var(--bg2);color:var(--txt);
+ border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px}
+textarea{height:120px;font-family:monospace;resize:vertical}
+.db label{display:block;margin:14px 0 5px;font-size:13px;color:var(--muted)}
+.db .hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.db .end{margin-top:18px;display:flex;gap:8px;justify-content:flex-end}
+#pv{padding:16px;display:flex;flex-direction:column;gap:11px}
+#pv img{width:100%;max-height:52vh;object-fit:cover;border-radius:12px;background:#20202a}
+#pv .rowb{display:flex;gap:8px}
+#pv .rowb a{flex:1;text-align:center;text-decoration:none;color:#fff;padding:12px;
+ border-radius:10px;font-weight:700}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+ background:#22222e;border:1px solid var(--line2);color:#fff;padding:12px 20px;
+ border-radius:12px;font-size:13.5px;opacity:0;transition:.3s;z-index:60;
+ pointer-events:none;max-width:90vw;box-shadow:var(--shadow)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style></head><body>
+<header>
+ <div class="logo"><span class="dot"></span><b>TikTok Live Finder</b></div>
+ <div class="grow"></div>
+ <div class="self" id="selfchip"><div class="st"></div><span>checking login…</span></div>
+ <button class="iconbtn" onclick="dlgSet.showModal()">⚙</button>
+</header>
+<main>
+ <div class="addbar">
+  <div class="field">
+   <input id="newuser" placeholder="Add a TikTok username to monitor  (e.g. someuser)"
+          onkeydown="if(event.key==='Enter')addMon()">
+  </div>
+  <button class="btn primary" onclick="addMon()">+ Add</button>
+  <button class="btn" onclick="document.getElementById('importfile').click()"
+          title="Load a following_*.json made by get_following.js">⬆ Import list</button>
+  <input type="file" id="importfile" accept=".json,application/json"
+         style="display:none" onchange="importList(this)">
+ </div>
+
+ <div class="sec">Accounts</div>
+ <div id="mons"></div>
+
+ <div class="sec">Activity</div>
+ <div class="logwrap" id="log"></div>
+</main>
+
+<dialog id="dlgSet"><div class="db">
+ <h3>Settings</h3>
+ <label>TikTok cookies <span style="color:var(--muted)">(Cookie-Editor JSON export)</span></label>
+ <textarea id="ck" placeholder='[{"name":"sessionid","value":"…"}, …]'></textarea>
+ <div class="hint">Log in on tiktok.com → Cookie-Editor extension → Export → paste here.
+  The Activity log will confirm “LOGIN OK”.</div>
+ <label>EnsembleData API token <span style="color:var(--muted)">(gets the FULL following list of ANY account)</span></label>
+ <input id="edtok" type="text" placeholder="paste your EnsembleData token" style="width:100%">
+ <div class="hint">Sign up at <b>ensembledata.com</b> (free trial) → copy your API
+  token → paste here. With a token, Start pulls the complete list for any
+  username (no ~150 web limit). Still set the account's secUid (⚙ UID).</div>
+ <label>Auto re-scan interval (seconds)</label>
+ <input id="iv" type="number" min="60" style="width:130px">
+ <label>Dashboard PIN <span style="color:var(--muted)">(blank = none)</span></label>
+ <input id="pin" type="text" style="width:130px" placeholder="e.g. 1234">
+ <div class="end">
+  <button class="btn ghost" onclick="dlgSet.close()">Close</button>
+  <button class="btn primary" onclick="saveSet()">Save</button>
+ </div>
+</div></dialog>
+
+<dialog id="dlgPv"><div id="pv">
+ <img id="pvimg" alt="">
+ <div><b id="pvname"></b> &nbsp;<span class="vw" id="pvvw"></span></div>
+ <div id="pvtitle" style="color:var(--muted);font-size:13.5px"></div>
+ <div class="rowb">
+  <a id="pvprofile" target="_blank" style="background:#2a2a38">Open profile</a>
+  <a id="pvwatch" target="_blank" style="background:linear-gradient(92deg,var(--accent),var(--accent2))">▶ Watch LIVE</a>
+ </div>
+ <button class="btn ghost" onclick="dlgPv.close()">Close</button>
+</div></dialog>
+
+<div id="toast"></div>
+
+<script>
+let S=null, lastSig="", advOpen={};
+const $=id=>document.getElementById(id);
+function esc(s){return(s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmt(n){n=+n||0;if(n>=1e9)return(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+ if(n>=1e6)return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+ if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.0$/,'')+'K';return''+n}
+function ago(ts){if(!ts)return'never';let s=Math.floor(Date.now()/1000-ts);if(s<0)s=0;
+ if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';
+ if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function eta(s){if(!s||s<1)return'';if(s<60)return'~'+s+'s left';return'~'+Math.ceil(s/60)+'m left'}
+function linkify(t){return esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank">$1</a>')}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
+ clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3600)}
+async function api(p,b){const r=await fetch(p,{method:b?'POST':'GET',
+ headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):null});return r.json()}
+async function refresh(){
+ try{const d=await api('/api/state');if(d&&!d.error)S=d;else return}catch(e){return}
+ try{render()}catch(e){console.error('render',e)}}
+
+function selfChip(){
+ const me=S.self,chip=$('selfchip');if(!chip)return;
+ if(!me){chip.innerHTML='<div class="st"></div><span>checking login…</span>';return}
+ if(me.valid){const p=me.profile;
+  chip.innerHTML='<div class="st"></div>'+(p&&p.avatar?`<img src="${esc(p.avatar)}">`:'')+
+   `<span><b>${esc(p?(p.nickname||p.username):me.detail)}</b>`+
+   `${p&&p.verified?' <span class="verified">✔</span>':''} · <span style="color:var(--ok)">active</span></span>`;
+ }else chip.innerHTML='<div class="st bad"></div><span style="color:#ff8397">not logged in — open ⚙</span>';
+}
+
+function liveCards(u,live){
+ let h='<div class="grid">';
+ for(const L of live){const img=L.cover||L.avatar,js=esc(JSON.stringify(L));
+  h+=`<div class="lc">${img?`<img class="thumb" loading="lazy" src="${esc(img)}" onclick='preview(${js})'>`
+      :`<div class="ph" onclick='preview(${js})'>🎥</div>`}
+   <div class="badge"><span class="pulse"></span><span class="vw">👀 ${fmt(L.viewers)}</span></div>
+   <div class="m"><div class="u">@${esc(L.username)}</div>
+    <div class="t">${esc(L.title||L.display_name||'')}</div>
+    <a class="w" href="${esc(L.url)}" target="_blank">▶ Watch</a></div></div>`}
+ return h+'</div>';
+}
+
+function render(){
+ selfChip();
+ // build a signature of display-relevant state; skip DOM work if unchanged
+ // and the user isn't typing in a field (keeps inputs stable, no flicker)
+ const editing=document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)
+   &&document.activeElement.closest('#mons');
+ const sig=JSON.stringify(Object.entries(S.monitors).map(([u,m])=>[u,m.profile&&m.profile.following,
+   m.following_count,m.loading_following,m.scanning,m.last_scan,(m.progress||{}).done,
+   (m.progress||{}).phase,(m.live||[]).length,m.status,m.secuid,advOpen[u]]))
+   +'|'+(S.log||[]).length+'|'+JSON.stringify(S.self);
+ if(sig!==lastSig && !editing){lastSig=sig;paintMons()}
+ // log updates cheaply
+ $('log').innerHTML=(S.log||[]).slice().reverse().map(l=>
+   `<div class="logrow"><span class="tm">${l.t}</span><span>${esc(l.msg)}</span></div>`).join('')
+   ||'<div class="logrow"><span>No activity yet.</span></div>';
+}
+
+function paintMons(){
+ const box=$('mons');const mons=Object.entries(S.monitors);
+ if(!mons.length){box.innerHTML='<div class="muted">No accounts yet — add a TikTok username above.</div>';return}
+ let h='';
+ for(const [u,m] of mons){
+  const p=m.profile,live=m.live||[],nf=m.following_count||0,busy=m.loading_following||m.scanning;
+  const su=(m.secuid||(p&&p.secuid)||'');
+  h+=`<div class="acct"><div class="top">`;
+  h+=p&&p.avatar?`<img class="avatar" src="${esc(p.avatar)}">`:`<div class="avatar ph">👤</div>`;
+  h+=`<div class="pi"><div class="name">${esc(p?(p.nickname||u):u)}`;
+  if(p&&p.verified)h+=` <span class="verified" title="Verified">✔</span>`;
+  if(live.length)h+=` <span class="chip live">${live.length} LIVE</span>`;
+  if(p&&p.private)h+=` <span class="chip priv">🔒 Private</span>`;
+  h+=`</div><div class="handle"><a href="https://www.tiktok.com/@${esc(u)}" target="_blank">@${esc(u)}</a></div>`;
+  if(p&&p.bio)h+=`<div class="bio">${linkify(p.bio)}</div>`;
+  if(p)h+=`<div class="stats">
+    <div class="stat"><b>${fmt(p.following)}</b><span>Following</span></div>
+    <div class="stat"><b>${fmt(p.followers)}</b><span>Followers</span></div>
+    <div class="stat"><b>${fmt(p.likes)}</b><span>Likes</span></div></div>`;
+  h+=`<div class="activity">`+(busy?`<span class="live-dot">●</span> working now`
+     :nf?`<span class="live-dot">●</span> active · last scan ${ago(m.last_scan)}`
+        :`<span class="idle-dot">○</span> not started`)+
+     (nf?` · ${nf} in following list`:``)+`</div></div></div>`;
+  // actions
+  h+=`<div class="acts">
+   <button class="btn primary sm" ${busy?'disabled':''} onclick="startScrape('${esc(u)}')">▶ Start</button>
+   <button class="btn sm" ${busy||!nf?'disabled':''} onclick="scanNow('${esc(u)}')">↻ Scan live</button>
+   <button class="btn ok sm" ${!nf?'disabled':''} onclick="exp('${esc(u)}','xlsx')">⬇ Excel</button>
+   <button class="btn ok sm" ${!nf?'disabled':''} onclick="exp('${esc(u)}','csv')">⬇ CSV</button>
+   <button class="btn ghost sm" onclick="toggleAdv('${esc(u)}')">⚙ UID</button>
+   <button class="btn ghost sm" onclick="removeMon('${esc(u)}')">✕</button>
+   <div class="statusmsg">${esc(m.status||'')}</div></div>`;
+  // advanced: secUid
+  h+=`<div class="adv ${advOpen[u]?'open':''}" id="adv-${esc(u)}">
+   <label>secUid — the account's ID from dev tools (optional; auto-detected when blank)</label>
+   <div class="row">
+    <input id="su-${esc(u)}" value="${esc(su)}" placeholder="MS4wLjABAAAA…" spellcheck="false">
+    <button class="btn sm" onclick="saveSecuid('${esc(u)}')">Save UID</button>
+   </div>
+   <div class="help">${p&&p.secuid?`<b>Auto-detected:</b> <span style="font-family:monospace">${esc(p.secuid.slice(0,26))}…</span><br>`:''}
+    <b>How to get it manually:</b> open <b>tiktok.com/@${esc(u)}</b> → press <b>F12</b> → <b>Network</b> tab →
+    scroll their Following list → click a request named <b>user/list</b> → in <b>Payload/Headers</b> copy the
+    <b>secUid</b> value → paste above.</div></div>`;
+  // progress
+  const pr=m.progress||{};
+  if(pr.phase){
+   const pct=pr.total?Math.min(100,Math.round(pr.done/pr.total*100)):0;
+   const lbl=pr.phase==='following'?'Loading following list':'Checking who is live';
+   h+=`<div class="progress"><div class="lab">
+     <span>${lbl} — <b>${pr.done}${pr.total?' / '+pr.total:''}</b> (${pct}%)</span>
+     <span>${eta(pr.eta)}</span></div>
+    <div class="bar ${pr.total?'':'indet'}"><i style="width:${pct}%"></i></div></div>`;
+  }
+  if(live.length)h+=liveCards(u,live);
+  else if(m.scanning)h+=`<div class="muted">Scanning… live accounts will appear here instantly.</div>`;
+  else if(nf)h+=`<div class="muted">Nobody live right now.</div>`;
+  h+=`</div>`;
+ }
+ box.innerHTML=h;
+}
+
+function preview(L){const img=L.cover||L.avatar;
+ $('pvimg').src=img||'';$('pvimg').style.display=img?'':'none';
+ $('pvname').textContent='@'+L.username;$('pvvw').textContent='👀 '+fmt(L.viewers)+' watching';
+ $('pvtitle').textContent=L.title||'';
+ $('pvprofile').href='https://www.tiktok.com/@'+L.username;$('pvwatch').href=L.url;dlgPv.showModal()}
+
+function toggleAdv(u){advOpen[u]=!advOpen[u];lastSig='';render()}
+async function addMon(){const u=$('newuser').value.trim().replace(/^@/,'');if(!u)return;
+ await api('/api/add',{username:u});$('newuser').value='';lastSig='';refresh()}
+function importList(input){const f=input.files&&input.files[0];if(!f)return;
+ const rd=new FileReader();
+ rd.onload=async()=>{let data;try{data=JSON.parse(rd.result)}catch(e){toast('Not a valid JSON file');return}
+  const r=await api('/api/import',data);
+  if(r&&r.ok){toast('✓ Imported '+r.count+' accounts — checking who is live…')}
+  else toast('Import failed: '+((r&&r.error)||'bad file'));
+  input.value='';lastSig='';refresh()};
+ rd.readAsText(f)}
+async function removeMon(u){if(confirm('Remove @'+u+'?')){await api('/api/remove',{username:u});lastSig='';refresh()}}
+async function startScrape(u){const r=await api('/api/start',{username:u});
+ if(r&&r.cooldown){const m=Math.ceil(r.cooldown/60);
+  toast('⏳ Rate-limited — wait ~'+m+' min before Start');}
+ else toast('Started @'+u+' — loading following list');
+ lastSig='';refresh()}
+async function scanNow(u){await api('/api/scan',{username:u});toast('Scanning @'+u+' for lives');lastSig='';refresh()}
+async function saveSecuid(u){const v=$('su-'+u).value.trim();
+ await api('/api/secuid',{username:u,secuid:v});toast(v?'secUid saved for @'+u:'secUid cleared');lastSig='';refresh()}
+async function exp(u,kind){toast('Preparing '+kind.toUpperCase()+' export…');
+ try{const r=await fetch('/api/export'+(kind==='csv'?'_csv':'')+'/'+encodeURIComponent(u));
+  if(!r.ok){const e=await r.json();toast('Export failed: '+(e.error||r.status));return}
+  const blob=await r.blob(),cd=r.headers.get('Content-Disposition')||'',
+   m=cd.match(/filename="?([^";]+)/),name=m?m[1]:u+'_FollowingList.'+kind;
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  URL.revokeObjectURL(a.href);toast('✓ Downloaded '+name)}catch(e){toast('Export failed: '+e)}}
+async function saveSet(){await api('/api/settings',{cookies:$('ck').value,
+  interval:parseInt($('iv').value)||300,pin:$('pin').value.trim(),
+  ed_token:$('edtok').value.trim()});
+ $('ck').value='';dlgSet.close();toast('Settings saved');setTimeout(refresh,1500);refresh()}
+
+// keep settings fields synced when dialog closed
+setInterval(()=>{if(S&&!dlgSet.open){$('iv').value=S.interval;$('pin').value=S.pin||'';
+ $('edtok').value=S.ed_token||''}},2000);
+refresh();
+let last=0;
+setInterval(()=>{const busy=S&&Object.values(S.monitors||{}).some(m=>m.scanning||m.loading_following);
+ if(Date.now()-last>=(busy?2000:5000)){last=Date.now();refresh()}},800);
+</script></body></html>
