@@ -1,0 +1,47 @@
+name: Sync to Hugging Face Space
+
+# Auto-pushes this repo to the Hugging Face Space every time main changes,
+# and can be run on demand from the Actions tab. The Space then rebuilds
+# itself and goes live. Needs one repo secret: HF_TOKEN (a Hugging Face
+# access token with the "Write" role).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Where the code is pushed. Update these if you rename the Space.
+env:
+  HF_USERNAME: Osajix
+  HF_SPACE: Carkoxs
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to the Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::HF_TOKEN secret is not set. Add it in the repo's" \
+                 "Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          # 'data/' holds cookies/token and stays out of the public Space;
+          # secrets are injected via the Space's own settings instead.
+          git rm -r --cached data 2>/dev/null || true
+          echo "data/" >> .gitignore
+          git add .gitignore
+          git commit -m "Exclude data/ from the public Space" || true
+          git push --force \
+            "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE}" \
+            HEAD:main
