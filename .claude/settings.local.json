@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python --version)",
+      "PowerShell(node --version)",
+      "PowerShell(pip --version)",
+      "PowerShell(pip show playwright)",
+      "PowerShell(pip show requests)",
+      "PowerShell(python -c \"from playwright.sync_api import sync_playwright; p = sync_playwright\\(\\).start\\(\\); print\\(p.chromium.executable_path\\); p.stop\\(\\)\")"
+    ]
+  }
+}
