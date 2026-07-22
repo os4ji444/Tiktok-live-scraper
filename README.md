@@ -1,3 +1,13 @@
+---
+title: TikTok Live Finder
+emoji: 🔴
+colorFrom: red
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # TikTok Live Finder
 
 Watches everyone a TikTok account **follows** and shows which of them are
@@ -69,6 +79,35 @@ run a tunnel on the PC, e.g. `cloudflared tunnel --url http://localhost:8321`
 (gives you a public https link). Set a PIN first if you do this.
 
 ### Put it online for free (no PC needed)
+
+**Option A — Hugging Face Spaces (free, NO credit card):**
+
+1. Create a free account at [huggingface.co](https://huggingface.co/join)
+   (email only, no card).
+2. Go to **New Space** ([huggingface.co/new-space](https://huggingface.co/new-space)):
+   pick any name (e.g. `tiktok-live-finder`), SDK = **Docker** → **Blank**,
+   hardware = **CPU basic (free)**, visibility = **Public**, then **Create**.
+3. In the new Space, open the **Files** tab → **+ Contribute → Upload files**,
+   and upload these files from this repo (download them from GitHub first, or
+   clone the repo):
+   - `Dockerfile`, `dashboard.py`, `scraper.py`, `requirements.txt`,
+     `README.md`, and the `templates` folder (with `index.html` inside).
+   - **Do NOT upload the `data` folder** — a public Space's files are visible
+     to everyone, and `data/` holds your cookies/token. Secrets go in step 4.
+4. Open the Space's **Settings** → **Variables and secrets** → add two
+   **secrets**:
+   - `DASHBOARD_PIN` = a PIN of your choice (required — keeps strangers out)
+   - `ED_TOKEN` = your EnsembleData API token
+5. The Space builds automatically (~2 min). Your dashboard is then live at
+   `https://<your-username>-<space-name>.hf.space` — open it from any phone,
+   enter your PIN, add an account, press **▶ Start**.
+
+Free Spaces only sleep after ~48 hours with no visitors (much friendlier than
+Render's 15 minutes) and wake automatically on the next visit. The disk is
+temporary: scraped lists survive normal use but reset when the Space restarts,
+so press **▶ Start** again after a restart to re-scrape.
+
+**Option B — Render (asks for a credit card in many countries):**
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/os4ji444/Tiktok-live-scraper)
 
