@@ -32382,17 +32382,18 @@
    "following_updated": 1784675299,
    "live": [],
    "last_scan": 1784696530,
-   "scanning": false,
+   "scanning": true,
    "loading_following": false,
    "status": "",
    "progress": {
-    "phase": "",
-    "done": 0,
-    "total": 0,
-    "eta": 0
+    "phase": "scan",
+    "done": 240,
+    "total": 2489,
+    "eta": 511
    },
    "ed_cursor": 0,
-   "ed_page_token": ""
+   "ed_page_token": "",
+   "scan_ctl": ""
   }
  },
  "log": [
@@ -32558,23 +32559,9 @@
   }
  ],
  "self": {
-  "valid": true,
-  "detail": "carloxs32",
-  "checked_at": 1784675861,
-  "profile": {
-   "username": "carloxs32",
-   "nickname": "carloxs32",
-   "bio": "",
-   "verified": false,
-   "private": false,
-   "avatar": "https://p19-common-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/1da03b18d8fefbd2be977d3b432bed1a~tplv-tiktokx-cropcenter:1080:1080.jpeg?dr=9640&refresh_token=7c129125&x-expires=1784847600&x-signature=uzjtT8K8UsRyM5W%2F7zBKB55WNeg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast5",
-   "secuid": "MS4wLjABAAAAZpDSPrHk-N_X6fRWardU8JJJyZypvTVoBC0-wkbwB4j1mD49l_8uaZg1pkb-x7Ke",
-   "followers": 0,
-   "following": 0,
-   "likes": 0,
-   "videos": 0,
-   "fetched_at": 1784675864
-  }
+  "valid": false,
+  "detail": "check failed: HTTPSConnectionPool(host='www.tiktok.com', port=443): Max retries exceeded with ",
+  "checked_at": 1784733082
  },
  "ed_token": "0DSTCkdUwafsJ11I"
 }

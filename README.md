@@ -68,6 +68,33 @@ The dashboard only works on your Wi-Fi by default. To open it from anywhere,
 run a tunnel on the PC, e.g. `cloudflared tunnel --url http://localhost:8321`
 (gives you a public https link). Set a PIN first if you do this.
 
+### Put it online for free (no PC needed)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/os4ji444/Tiktok-live-scraper)
+
+1. Click the button above (create a free [Render](https://render.com) account
+   and connect GitHub when asked).
+2. When prompted, fill in the two environment variables:
+   - **DASHBOARD_PIN** — a PIN of your choice; the online dashboard is public,
+     so this is what keeps strangers out. **Do not leave it empty.**
+   - **ED_TOKEN** — your EnsembleData API token (from
+     dashboard.ensembledata.com), used to scrape following lists.
+3. Press **Apply / Deploy**. After a couple of minutes your dashboard is live
+   at `https://tiktok-live-finder-XXXX.onrender.com` — open it from any phone
+   or PC, enter your PIN, and use it exactly like the local version.
+
+Notes for the online version:
+
+- It scrapes following lists through the EnsembleData API only (the
+  off-screen-Chrome fallback needs a desktop and is disabled there), so the
+  ED_TOKEN is required.
+- Render's free tier **sleeps after ~15 min without visitors** — the first
+  visit after a pause takes ~1 min to wake, and auto re-scans pause while it
+  sleeps. Keeping the tab open keeps it awake.
+- The free tier's disk is temporary: accounts you add and lists you scrape
+  survive day-to-day use but reset when the service restarts or redeploys.
+  Anything committed to the repo's `data/state.json` is restored on restart.
+
 ### Auto-start with Windows (optional)
 
 Press `Win+R`, type `shell:startup`, press Enter, and copy a shortcut to

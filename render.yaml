@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: tiktok-live-finder
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python dashboard.py
+    envVars:
+      - key: DASHBOARD_PIN
+        sync: false
+      - key: ED_TOKEN
+        sync: false

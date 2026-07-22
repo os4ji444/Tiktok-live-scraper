@@ -541,8 +541,6 @@ def scrape_following(username: str, cookies: list[dict], secuid: str = "",
     progress_cb(count) is called as accounts stream in.
     Returns (list_of_accounts, error_message_or_empty).
     """
-    from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
-
     collected: dict[str, dict] = {}
     log = log_cb or (lambda m: None)
     meta = {"has_more": None, "empty_responses": 0,
@@ -646,6 +644,12 @@ def scrape_following(username: str, cookies: list[dict], secuid: str = "",
                 log(f"DONE - {len(collected)} following collected")
             return list(collected.values()), ""
         log("TikTokApi path unavailable/empty; falling back to browser method")
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return [], ("browser fallback unavailable on this server - set an "
+                    "EnsembleData token in Settings to scrape the list")
 
     with sync_playwright() as p:
         # Headed real Chrome, parked off-screen (positive coords) so it does
