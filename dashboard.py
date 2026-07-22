@@ -18,6 +18,7 @@ Then open:        http://<your-pc-ip>:8321  (shown at startup)
 
 import io
 import json
+import os
 import re
 import socket
 import threading
@@ -39,7 +40,7 @@ DATA_DIR.mkdir(exist_ok=True)
 STATE_FILE = DATA_DIR / "state.json"
 COOKIES_FILE = DATA_DIR / "cookies.txt"
 
-PORT = 8321
+PORT = int(os.environ.get("PORT", 8321))
 LIVE_WORKERS = 4
 LIVE_DELAY = 0.3
 
@@ -84,6 +85,14 @@ def load_state() -> dict:
 
 
 state = load_state()
+
+# Cloud deployment: env vars override/seed the stored settings so secrets
+# don't have to live in the repo. DASHBOARD_PIN also protects a fresh deploy
+# from being open to the whole internet.
+if os.environ.get("DASHBOARD_PIN"):
+    state["pin"] = os.environ["DASHBOARD_PIN"]
+if os.environ.get("ED_TOKEN"):
+    state["ed_token"] = os.environ["ED_TOKEN"]
 
 
 def save_state() -> None:
