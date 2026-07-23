@@ -347,11 +347,23 @@ def start_task(uname: str) -> None:
     scan_task(uname)
 
 
+# Drop a live from the grid if it hasn't been re-CONFIRMED live within this
+# window. Stops "ghost" lives lingering when an account can't be reached
+# (rate-limited) for a while - if we can't confirm it's live, we don't claim it.
+LIVE_TTL = 600        # seconds (~2 auto-scan cycles)
+
+
 def _rebuild_live(mon) -> None:
-    """Recompute mon['live'] from each account's stored live status/info."""
+    """Recompute mon['live'] from each account's stored live status/info,
+    expiring any live that hasn't been confirmed within LIVE_TTL."""
+    now = int(time.time())
     live = []
     for f in mon.get("following") or []:
         if f.get("live") and f.get("live_info"):
+            if now - int(f.get("live_checked_at") or 0) > LIVE_TTL:
+                f["live"] = False             # stale -> treat as ended
+                f.pop("live_info", None)
+                continue
             live.append(f["live_info"])
     mon["live"] = live
 

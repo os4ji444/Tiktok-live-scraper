@@ -247,25 +247,40 @@ def fetch_profile(username: str, cookies: dict | None = None) -> dict | None:
 
 def check_live(username: str, session: requests.Session) -> dict:
     """
-    status 2 = live, 4 = offline (TikTok's own web endpoint).
-    Returns "ok": False when the check couldn't be determined (empty body /
-    rate-limited / error) so the caller can keep the previous status instead of
-    wrongly marking the account offline.
+    Ask TikTok's own web endpoint whether @username is live right now.
+    status 2 = live; anything else in a VALID response = not live.
+
+    Returns "ok": False ONLY when the check couldn't be determined at all
+    (network error / empty body / no user object = rate-limited or no answer)
+    so the caller keeps the previous status. A valid response whose status is
+    not 2 is a real "not live" answer (ok:True, live:False) - this is what
+    clears a stream from the grid once it has ENDED (ended lives often report a
+    status other than 4, which the old code wrongly treated as 'unknown' and so
+    left them stuck showing LIVE).
     """
+    unknown = {"username": username, "ok": False, "live": False,
+               "checked_at": int(time.time())}
     url = (f"https://www.tiktok.com/api-live/user/room/"
            f"?aid=1988&sourceType=54&uniqueId={username}")
     try:
-        d = session.get(url, timeout=15).json()
-        user = (d.get("data") or {}).get("user") or {}
-        room = (d.get("data") or {}).get("liveRoom") or {}
-        status = user.get("status")
-        if status not in (2, 4):              # unknown -> not a real answer
-            return {"username": username, "ok": False, "live": False,
-                    "checked_at": int(time.time())}
+        resp = session.get(url, timeout=15)
+        if not (resp.text or "").strip():
+            return unknown                    # empty body = rate-limited
+        d = resp.json()
+    except Exception:
+        return unknown
+    data = d.get("data")
+    if not isinstance(data, dict):
+        return unknown                        # malformed = no real answer
+    user = data.get("user")
+    if not isinstance(user, dict) or not user:
+        return unknown                        # no user info = no real answer
+    room = data.get("liveRoom") or {}
+    if user.get("status") == 2:
         return {
             "username": username,
             "ok": True,
-            "live": status == 2,
+            "live": True,
             "title": (room.get("title") or "").strip(),
             "viewers": (room.get("liveRoomStats") or {}).get("userCount", 0) or 0,
             "avatar": user.get("avatarThumb") or "",
@@ -273,9 +288,9 @@ def check_live(username: str, session: requests.Session) -> dict:
             "url": f"https://www.tiktok.com/@{username}/live",
             "checked_at": int(time.time()),
         }
-    except Exception:
-        return {"username": username, "ok": False, "live": False,
-                "checked_at": int(time.time())}
+    # valid response, not status 2 -> genuinely NOT live (confirmed offline)
+    return {"username": username, "ok": True, "live": False,
+            "checked_at": int(time.time())}
 
 
 # ------------------------------------------------------ following scrape ----
