@@ -78,7 +78,7 @@ def _parse_tokens(tokens) -> list[str]:
 
 def scrape_following_ed(secuid: str, tokens, ingest, log,
                         user_id: str = "", start_cursor=0, start_page_token="",
-                        out: dict = None) -> tuple[bool, str]:
+                        out: dict = None, control=None) -> tuple[bool, str]:
     """
     Pull the FULL following list of any account via EnsembleData's TikTok API
     (which uses TikTok's mobile backend - no ~150 web cap, works for accounts
@@ -128,6 +128,17 @@ def scrape_following_ed(secuid: str, tokens, ingest, log,
     limit_msg = ("all EnsembleData tokens hit their daily limit - add more "
                  "tokens in Settings, or press Start again tomorrow to continue")
     for pg in range(8000):                     # safety ceiling
+        # ---- Pause / Stop control (checked between pages) ----
+        if control:
+            c = control()
+            while c == "pause":
+                time.sleep(0.5)
+                c = control()
+            if c == "stop":
+                log(f"  data-API: stopped by user at {total}")
+                return finish(cursor, page_token, True,
+                              f"got {total} - stopped by you; progress saved, "
+                              f"press Start to continue")
         try:
             r = s.get(ED_ROOT + "/tt/user/followings",
                      params={"id": user_id, "secUid": secuid, "cursor": cursor,
@@ -569,7 +580,8 @@ def _scrape_via_tiktokapi(secuid, cookies_list, start_cursor, ingest, log):
 
 def scrape_following(username: str, cookies: list[dict], secuid: str = "",
                      start_cursor: str = "0", out: dict = None, ed_token: str = "",
-                     progress_cb=None, log_cb=None) -> tuple[list[dict], str]:
+                     progress_cb=None, log_cb=None,
+                     control=None) -> tuple[list[dict], str]:
     """
     Pull @username's full following list with NO visible window.
 
@@ -613,7 +625,8 @@ def scrape_following(username: str, cookies: list[dict], secuid: str = "",
             ed_start_token = out.get("ed_page_token_in", "")
         ok, err = scrape_following_ed(target_secuid, ed_token, _add_entry, log,
                                       start_cursor=ed_start_cursor,
-                                      start_page_token=ed_start_token, out=ed_out)
+                                      start_page_token=ed_start_token, out=ed_out,
+                                      control=control)
         if collected:
             if out is not None:
                 out["ed_cursor"] = ed_out.get("ed_cursor", 0)

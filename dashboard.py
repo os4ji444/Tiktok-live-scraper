@@ -60,7 +60,8 @@ def default_monitor() -> dict:
     return {"profile": None, "secuid": "", "cursor": "0", "cooldown_until": 0,
             "ed_cursor": 0, "ed_page_token": "",
             "following": [], "following_updated": 0, "live": [], "last_scan": 0,
-            "scanning": False, "scan_ctl": "", "loading_following": False,
+            "scanning": False, "scan_ctl": "", "scrape_ctl": "",
+            "loading_following": False,
             "status": "", "progress": {"phase": "", "done": 0, "total": 0, "eta": 0}}
 
 
@@ -80,6 +81,8 @@ def load_state() -> dict:
                     m.setdefault(k, v)
                 m["scanning"] = False
                 m["loading_following"] = False
+                m["scan_ctl"] = ""
+                m["scrape_ctl"] = ""
                 m["progress"] = {"phase": "", "done": 0, "total": 0, "eta": 0}
             return s
         except Exception:
@@ -236,6 +239,7 @@ def start_task(uname: str) -> None:
             # added ON TOP of these, so progress must count from here, not 0.
             base_done = len(mon.get("following") or [])
             mon["loading_following"] = True
+            mon["scrape_ctl"] = ""                 # clear any old pause/stop
             mon["status"] = ""
             mon["progress"] = {"phase": "following",
                                "done": base_done,
@@ -262,10 +266,17 @@ def start_task(uname: str) -> None:
 
         out = {"ed_cursor_in": ed_cursor_in, "ed_page_token_in": ed_token_in}
         ed_token = (state.get("ed_token") or "").strip()
+
+        def control():
+            with state_lock:
+                m = state["monitors"].get(uname)
+                return (m or {}).get("scrape_ctl", "")
+
         following, err = scrape_following(uname, get_cookies(), secuid=secuid,
                                           start_cursor=resume_cursor, out=out,
                                           ed_token=ed_token,
-                                          progress_cb=progress, log_cb=add_log)
+                                          progress_cb=progress, log_cb=add_log,
+                                          control=control)
         if err and not following:
             # If TikTok rate-limited us, start a cooldown so the user can't
             # deepen the block by pressing Start again immediately.
@@ -604,6 +615,26 @@ def api_scan_ctl():
                                "stop": "stop"}.get(action, "")
             save_state()
     add_log(f"@{u}: scan {action}")
+    return jsonify({"ok": True})
+
+
+@app.route("/api/control", methods=["POST"])
+def api_control():
+    """Pause / resume / stop whichever operation is running (scrape OR scan)."""
+    if not pin_ok():
+        return jsonify({"error": "auth"}), 401
+    body = request.json or {}
+    u = body.get("username", "")
+    action = body.get("action", "")           # pause | resume | stop
+    val = {"pause": "pause", "resume": "", "stop": "stop"}.get(action, "")
+    with state_lock:
+        mon = state["monitors"].get(u)
+        if mon is not None:
+            # only one of scrape/scan runs at a time; set both harmlessly
+            mon["scan_ctl"] = val
+            mon["scrape_ctl"] = val
+            save_state()
+    add_log(f"@{u}: {action}")
     return jsonify({"ok": True})
 
 

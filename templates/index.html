@@ -60,6 +60,7 @@ main{padding:18px;max-width:1180px;margin:0 auto}
  border-color:transparent;box-shadow:0 4px 14px rgba(254,44,85,.3)}
 .btn.ghost{background:transparent}
 .btn.ok{background:linear-gradient(92deg,#14855a,#1aa06c);border-color:transparent}
+.btn.danger{background:linear-gradient(92deg,#b3261e,#d3372c);border-color:transparent;color:#fff}
 .btn.sm{padding:8px 12px;font-size:13px;border-radius:10px}
 
 .sec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;
@@ -280,7 +281,8 @@ function render(){
    &&document.activeElement.closest('#mons');
  const sig=JSON.stringify(Object.entries(S.monitors).map(([u,m])=>[u,m.profile&&m.profile.following,
    m.following_count,m.loading_following,m.scanning,m.last_scan,(m.progress||{}).done,
-   (m.progress||{}).phase,(m.live||[]).length,m.status,m.secuid,advOpen[u]]))
+   (m.progress||{}).phase,(m.live||[]).length,m.status,m.secuid,advOpen[u],
+   m.scrape_ctl,m.scan_ctl]))
    +'|'+(S.log||[]).length+'|'+JSON.stringify(S.self);
  if(sig!==lastSig && !editing){lastSig=sig;paintMons()}
  // log updates cheaply
@@ -313,9 +315,15 @@ function paintMons(){
         :`<span class="idle-dot">○</span> not started`)+
      (nf?` · ${nf} in following list`:``)+`</div></div></div>`;
   // actions
+  const paused=(m.scrape_ctl==='pause'||m.scan_ctl==='pause');
   h+=`<div class="acts">
    <button class="btn primary sm" ${busy?'disabled':''} onclick="startScrape('${esc(u)}')">▶ Start</button>
-   <button class="btn sm" ${busy||!nf?'disabled':''} onclick="scanNow('${esc(u)}')">↻ Scan live</button>
+   <button class="btn sm" ${busy||!nf?'disabled':''} onclick="scanNow('${esc(u)}')">↻ Scan live</button>`;
+  if(busy)h+=`
+   ${paused?`<button class="btn ok sm" onclick="opCtl('${esc(u)}','resume')">▶ Resume</button>`
+           :`<button class="btn sm" onclick="opCtl('${esc(u)}','pause')">⏸ Pause</button>`}
+   <button class="btn danger sm" onclick="opCtl('${esc(u)}','stop')">⏹ Stop</button>`;
+  h+=`</div><div class="acts">`;
    <button class="btn ok sm" ${!nf?'disabled':''} onclick="exp('${esc(u)}','xlsx')">⬇ Excel</button>
    <button class="btn ok sm" ${!nf?'disabled':''} onclick="exp('${esc(u)}','csv')">⬇ CSV</button>
    <button class="btn ghost sm" onclick="toggleAdv('${esc(u)}')">⚙ UID</button>
@@ -374,6 +382,8 @@ async function startScrape(u){const r=await api('/api/start',{username:u});
  else toast('Started @'+u+' — loading following list');
  lastSig='';refresh()}
 async function scanNow(u){await api('/api/scan',{username:u});toast('Scanning @'+u+' for lives');lastSig='';refresh()}
+async function opCtl(u,action){await api('/api/control',{username:u,action});
+ toast({pause:'⏸ Paused',resume:'▶ Resumed',stop:'⏹ Stopping…'}[action]||action);lastSig='';refresh()}
 async function saveSecuid(u){const v=$('su-'+u).value.trim();
  await api('/api/secuid',{username:u,secuid:v});toast(v?'secUid saved for @'+u:'secUid cleared');lastSig='';refresh()}
 async function exp(u,kind){toast('Preparing '+kind.toUpperCase()+' export…');
