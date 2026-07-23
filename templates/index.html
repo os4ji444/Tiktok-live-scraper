@@ -199,11 +199,14 @@ textarea{height:120px;font-family:monospace;resize:vertical}
  <textarea id="ck" placeholder='[{"name":"sessionid","value":"…"}, …]'></textarea>
  <div class="hint">Log in on tiktok.com → Cookie-Editor extension → Export → paste here.
   The Activity log will confirm “LOGIN OK”.</div>
- <label>EnsembleData API token <span style="color:var(--muted)">(gets the FULL following list of ANY account)</span></label>
- <input id="edtok" type="text" placeholder="paste your EnsembleData token" style="width:100%">
+ <label>EnsembleData API token(s) <span style="color:var(--muted)">(gets the FULL following list of ANY account)</span></label>
+ <textarea id="edtok" placeholder="paste your EnsembleData token (one per line for multiple accounts)" style="width:100%;min-height:70px;resize:vertical"></textarea>
  <div class="hint">Sign up at <b>ensembledata.com</b> (free trial) → copy your API
   token → paste here. With a token, Start pulls the complete list for any
-  username (no ~150 web limit). Still set the account's secUid (⚙ UID).</div>
+  username (no ~150 web limit). Still set the account's secUid (⚙ UID).
+  <b>Have several accounts?</b> Paste one token <b>per line</b> — when one hits
+  its daily limit, the next continues automatically, so a big following list is
+  collected in one run.</div>
  <label>Auto re-scan interval (seconds)</label>
  <input id="iv" type="number" min="60" style="width:130px">
  <label>Dashboard PIN <span style="color:var(--muted)">(blank = none)</span></label>

@@ -68,13 +68,27 @@ def ed_resolve_id(secuid: str, token: str, log=print) -> str:
         return ""
 
 
-def scrape_following_ed(secuid: str, token: str, ingest, log,
+def _parse_tokens(tokens) -> list[str]:
+    """A single string (tokens separated by comma/space/newline) or a list ->
+    a clean list of tokens."""
+    if isinstance(tokens, (list, tuple)):
+        return [str(t).strip() for t in tokens if str(t).strip()]
+    return [t.strip() for t in re.split(r"[\s,]+", tokens or "") if t.strip()]
+
+
+def scrape_following_ed(secuid: str, tokens, ingest, log,
                         user_id: str = "", start_cursor=0, start_page_token="",
                         out: dict = None) -> tuple[bool, str]:
     """
     Pull the FULL following list of any account via EnsembleData's TikTok API
     (which uses TikTok's mobile backend - no ~150 web cap, works for accounts
     you don't own). Paginates with cursor + page_token until exhausted.
+
+    `tokens` may be one token or several (list, or a comma/newline-separated
+    string). When a token hits its daily request limit, the next token takes
+    over from the exact same position - so several free EnsembleData accounts
+    combine into one long run and can cover a big following list in one go.
+
     Resumes from start_cursor/start_page_token and writes the stop position to
     `out` so a later run can continue. Returns (ok, error_message).
     """
@@ -84,12 +98,25 @@ def scrape_following_ed(secuid: str, token: str, ingest, log,
             out["ed_more"] = more
         return got_any, err
 
-    if not token:
+    toks = _parse_tokens(tokens)
+    if not toks:
         return False, "no EnsembleData API token set (add it in Settings)"
     if not secuid:
         return False, "no secUid - paste it in the account's UID field"
+
+    ti = 0                                     # index of the token in use
     if not user_id:
-        user_id = ed_resolve_id(secuid, token, log)
+        user_id = ed_resolve_id(secuid, toks[ti], log)
+
+    def rotate(reason) -> bool:
+        """Switch to the next token if one is left. Returns True if switched."""
+        nonlocal ti
+        if ti + 1 < len(toks):
+            ti += 1
+            log(f"  token #{ti} used up ({reason}); switching to token "
+                f"#{ti + 1}/{len(toks)}")
+            return True
+        return False
 
     s = requests.Session()
     cursor = start_cursor if start_cursor not in (None, "") else 0
@@ -98,25 +125,31 @@ def scrape_following_ed(secuid: str, token: str, ingest, log,
     total = 0
     if cursor not in (0, "0", "") or page_token:
         log(f"  data-API: resuming from cursor {cursor!r}")
-    for pg in range(4000):                     # safety ceiling
+    limit_msg = ("all EnsembleData tokens hit their daily limit - add more "
+                 "tokens in Settings, or press Start again tomorrow to continue")
+    for pg in range(8000):                     # safety ceiling
         try:
             r = s.get(ED_ROOT + "/tt/user/followings",
                      params={"id": user_id, "secUid": secuid, "cursor": cursor,
-                             "page_token": page_token, "token": token},
+                             "page_token": page_token, "token": toks[ti]},
                      timeout=45)
         except Exception as e:
             return finish(cursor, page_token, True,
                           f"stopped at {total}: request error: {str(e)[:80]}")
         if r.status_code in (401, 403, 491):
+            if rotate("token invalid"):
+                continue
             return finish(cursor, page_token, True,
                           "EnsembleData token invalid - sign up at "
                           "dashboard.ensembledata.com and paste your token")
-        if r.status_code in (429, 492, 493):
+        if r.status_code in (429, 492, 493, 495):
+            if rotate(f"HTTP {r.status_code} daily limit"):
+                continue
             return finish(cursor, page_token, True,
-                          f"stopped at {total}: EnsembleData units/quota ran out "
-                          f"(HTTP {r.status_code}) - the list is longer; top up "
-                          f"units and press Start again to resume")
+                          f"got {total} - stopped at {total}: {limit_msg}")
         if r.status_code != 200:
+            if "Maximum requests limit" in r.text and rotate("daily limit"):
+                continue
             return finish(cursor, page_token, True,
                           f"stopped at {total}: EnsembleData HTTP "
                           f"{r.status_code}: {r.text[:100]}")
@@ -125,6 +158,12 @@ def scrape_following_ed(secuid: str, token: str, ingest, log,
         except Exception:
             return finish(cursor, page_token, True,
                           f"stopped at {total}: bad JSON: {r.text[:100]}")
+        # some plans return HTTP 200 with an error detail when the limit is hit
+        if isinstance(j, dict) and "Maximum requests limit" in str(j.get("detail", "")):
+            if rotate("daily limit"):
+                continue
+            return finish(cursor, page_token, True,
+                          f"got {total} - stopped at {total}: {limit_msg}")
         data = j.get("data") or {}
         lst = (data.get("followings") or data.get("users")
                or data.get("followers") or [])
@@ -145,6 +184,7 @@ def scrape_following_ed(secuid: str, token: str, ingest, log,
         page_token = data.get("nextPageToken") or data.get("next_page_token") or ""
         if pg % 5 == 0 or not lst:
             log(f"  data-API page {pg + 1}: +{added} (total {total}) | "
+                f"token #{ti + 1}/{len(toks)} | "
                 f"nextCursor={cursor!r} pageToken={'yes' if page_token else 'no'}")
         if not lst:
             return finish(cursor, page_token, False, "")   # true end
@@ -562,7 +602,9 @@ def scrape_following(username: str, cookies: list[dict], secuid: str = "",
         if not target_secuid:
             return [], ("need the account's secUid for the data API - paste it "
                         "in the UID field")
-        log(f"using EnsembleData API (full list, any account)...")
+        n_tok = len(_parse_tokens(ed_token))
+        log(f"using EnsembleData API (full list, any account) - "
+            f"{n_tok} token{'s' if n_tok != 1 else ''}...")
         ed_out = {}
         ed_start_cursor = 0
         ed_start_token = ""
