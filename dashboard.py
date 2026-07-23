@@ -35,8 +35,11 @@ from flask import (Flask, jsonify, make_response, redirect, render_template,
 from scraper import UA, check_live, fetch_profile, scrape_following
 
 BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+# DATA_DIR can point at persistent storage (e.g. a Google Drive folder on
+# Colab) via the DATA_DIR env var, so scraped lists and resume progress
+# survive restarts. Defaults to a local ./data folder.
+DATA_DIR = Path(os.environ.get("DATA_DIR") or (BASE_DIR / "data"))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 STATE_FILE = DATA_DIR / "state.json"
 COOKIES_FILE = DATA_DIR / "cookies.txt"
 
@@ -229,10 +232,13 @@ def start_task(uname: str) -> None:
             resume_cursor = str(mon.get("cursor") or "0")
             ed_cursor_in = mon.get("ed_cursor") or 0
             ed_token_in = mon.get("ed_page_token") or ""
+            # accounts already collected in previous runs - the new batch is
+            # added ON TOP of these, so progress must count from here, not 0.
+            base_done = len(mon.get("following") or [])
             mon["loading_following"] = True
             mon["status"] = ""
             mon["progress"] = {"phase": "following",
-                               "done": len(mon.get("following") or []),
+                               "done": base_done,
                                "total": total, "eta": 0}
             save_state()
         resume_note = "" if resume_cursor in ("0", "") else " (resuming)"
@@ -247,10 +253,12 @@ def start_task(uname: str) -> None:
                 if mon is None:
                     return
                 p = mon["progress"]
-                p["done"] = count
+                # cumulative = already-saved accounts + this run's new ones
+                done = base_done + count
+                p["done"] = done
                 if p["total"] and count:
                     rate = count / max(time.time() - t0, 1)
-                    p["eta"] = int((p["total"] - count) / max(rate, 0.1))
+                    p["eta"] = int(max(p["total"] - done, 0) / max(rate, 0.1))
 
         out = {"ed_cursor_in": ed_cursor_in, "ed_page_token_in": ed_token_in}
         ed_token = (state.get("ed_token") or "").strip()
@@ -282,15 +290,29 @@ def start_task(uname: str) -> None:
         # Save cursor so the next Start resumes; clear it when the list is done.
         has_more = bool(out.get("has_more"))
         new_cursor = out.get("cursor", "0") if has_more else "0"
-        # `err` set with data = partial (e.g. data-API units ran out)
+        # `err` set with data = partial (e.g. data-API daily limit reached)
         partial_note = err if (err and following) else ""
-        # persist data-API resume position (cleared when the list is complete)
-        ed_more = has_more and out.get("ed_cursor") is not None
+        # Persist the data-API resume position whenever more accounts remain.
+        # EnsembleData paginates by cursor AND/OR page_token, and often returns
+        # a null cursor with only a page_token - that token IS the resume key,
+        # so keep both. (The old code required a non-null cursor and threw the
+        # token away, which made the next Start restart from 0.)
+        if has_more:
+            ec = out.get("ed_cursor")
+            ed_cursor_save = 0 if ec is None else ec
+            ed_token_save = out.get("ed_page_token") or ""
+        else:
+            ed_cursor_save, ed_token_save = 0, ""
+        # When we stopped only because of the daily quota, tell the user their
+        # progress is saved and Start will continue tomorrow.
+        if partial_note and has_more:
+            partial_note = (f"{partial_note} - progress saved ({len(merged)} so "
+                            f"far); press Start again to continue from here")
         set_mon(uname, following=merged,
                 following_updated=int(time.time()),
                 loading_following=False, cursor=new_cursor, cooldown_until=0,
-                ed_cursor=(out.get("ed_cursor", 0) if ed_more else 0),
-                ed_page_token=(out.get("ed_page_token", "") if ed_more else ""),
+                ed_cursor=ed_cursor_save,
+                ed_page_token=ed_token_save,
                 status=partial_note,
                 progress={"phase": "", "done": 0, "total": 0, "eta": 0})
         added = len(merged) - before
